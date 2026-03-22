@@ -107,12 +107,6 @@ gender char(1)
 3). 手机号 phone --------> 固定长度为11
 phone char(11)
 3). 日期时间类型
-
-
-
-
- 
-
 类型        大小        范围                                    格式                    描述
 DATE        3     1000-01-01 至 9999-12-31                   YYYY-MM-DD               日期值
 TIME        3     -838:59:59 至 838:59:59                    HH:MM:SS              时间值或持续时间
@@ -136,7 +130,6 @@ createtime datetime
 6. 身份证号（二代身份证号均为18位，身份证中有X这样的字符）
 7. 入职时间（取值年月日即可）
 对应的建表语句如下:
-
 create table emp(
 id int comment '编号',
 workno varchar(10) comment '工号',
