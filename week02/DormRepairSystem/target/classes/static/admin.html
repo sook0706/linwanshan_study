@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>宿舍报修系统-管理员端</title>
+    <style>
+        table {border-collapse: collapse; width: 90%; margin: 20px auto;}
+        th, td {border: 1px solid #ccc; padding: 8px; text-align: center;}
+        th {background-color: #f5f5f5;}
+        .container {width: 90%; margin: 0 auto;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔧 宿舍报修系统-管理员端</h1>
+
+    <div style="margin: 20px 0;">
+        <span style="color: green;">✅ 管理员已登录，Token已保存</span><br><br>
+        <label>管理员Token：</label>
+        <input type="text" id="tokenInput" style="width: 400px;" placeholder="请粘贴登录获取的Token">
+        <button onclick="saveToken()">保存Token</button>
+    </div>
+
+    <div>
+        <h3>📋 所有报修记录</h3>
+        <button id="refreshBtn">刷新列表</button>
+        <div id="listContainer" style="margin-top: 20px;"></div>
+    </div>
+</div>
+
+<script>
+    const statusMap = {0: '待处理', 1: '处理中', 2: '已完成'};
+
+    window.onload = function() {
+        const savedToken = localStorage.getItem('adminToken');
+        if (savedToken) document.getElementById('tokenInput').value = savedToken;
+        document.getElementById('refreshBtn').onclick = refreshList;
+    };
+
+    function saveToken() {
+        const token = document.getElementById('tokenInput').value.trim();
+        if (!token) { alert('请输入Token！'); return; }
+        localStorage.setItem('adminToken', token);
+        alert('Token保存成功！');
+    }
+
+    //刷新列表
+    function refreshList() {
+        const token = localStorage.getItem('adminToken');
+        if (!token) { alert('请先保存Token！'); return; }
+
+        fetch('http://localhost:8088/repair/allList', {
+            method: 'GET',
+            headers: {
+                'token': token
+            }
+        })
+        .then(res => {
+            if (!res.ok) return res.text().then(text => { throw new Error(text); });
+            return res.json();
+        })
+        .then(data => {
+            console.log("后端返回:", data);
+            const list = data.data || [];
+            renderList(list);
+        })
+        .catch(err => {
+            alert('请求失败：' + err.message);
+        });
+    }
+
+    //渲染列表
+    function renderList(list) {
+        const container = document.getElementById('listContainer');
+        if (!list || list.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:#999;">暂无报修记录</p>';
+            return;
+        }
+
+        let table = `
+        <table>
+            <tr><th>ID</th><th>报修人</th><th>宿舍号</th><th>故障描述</th><th>状态</th><th>报修时间</th></tr>
+        `;
+
+        list.forEach(item => {
+            table += `
+            <tr>
+                <td>${item.id}</td><td>${item.studentId}</td><td>${item.dormNum}</td>
+                <td>${item.repairContent}</td><td>${statusMap[item.status]||'未知'}</td><td>${item.createTime}</td>
+            </tr>
+            `;
+        });
+
+        table += `</table>`;
+        container.innerHTML = table;
+    }
+</script>
+</body>
+</html>

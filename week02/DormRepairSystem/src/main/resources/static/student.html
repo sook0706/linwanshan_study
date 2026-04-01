@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>宿舍报修系统-学生端</title>
+    <style>
+        body {max-width: 800px; margin: 20px auto; font-family: Arial;}
+        .form-group {margin: 15px 0;}
+        input, textarea {width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box;}
+        button {padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer;}
+        .order-item {border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px;}
+        #loginStatus {color: #666; margin-bottom: 20px;}
+    </style>
+</head>
+<body>
+<h1>🏠 宿舍报修系统-学生端</h1>
+<div id="loginStatus">未登录，请先登录获取Token</div>
+
+<div class="form-group">
+    <label>Token：</label>
+    <input type="text" id="tokenInput" placeholder="粘贴你的登录Token">
+    <button onclick="saveToken()">保存Token</button>
+</div>
+
+<h2>📝 提交报修</h2>
+<form id="submitForm" onsubmit="return false;">
+    <div class="form-group">
+        <label>学生ID：</label>
+        <input type="text" id="studentId" required>
+    </div>
+    <div class="form-group">
+        <label>宿舍号：</label>
+        <input type="text" id="dormNum" required>
+    </div>
+    <div class="form-group">
+        <label>报修内容：</label>
+        <textarea id="repairContent" rows="4" required></textarea>
+    </div>
+    <button onclick="submitRepair()">提交报修</button>
+</form>
+
+<h2>📜 我的报修记录</h2>
+<button onclick="loadMyList()">刷新列表</button>
+<div id="myList"></div>
+
+<script>
+    const baseUrl = "http://localhost:8080";
+    let token = localStorage.getItem("token") || "";
+
+    //初始化
+    if (token) {
+        document.getElementById("tokenInput").value = token;
+        document.getElementById("loginStatus").innerText = "✅ 已登录，Token已保存";
+        loadMyList();
+    }
+
+    //保存Token
+    function saveToken() {
+        token = document.getElementById("tokenInput").value.trim();
+        if (!token) {alert("请输入Token！"); return;}
+        localStorage.setItem("token", token);
+        document.getElementById("loginStatus").innerText = "✅ 已登录，Token已保存";
+        loadMyList();
+    }
+
+    //提交报修
+    async function submitRepair() {
+        if (!token) {alert("请先输入Token登录！"); return;}
+
+        const studentId = document.getElementById("studentId").value;
+        const dormNum = document.getElementById("dormNum").value;
+        const repairContent = document.getElementById("repairContent").value;
+
+        const url = `${baseUrl}/repair/submit?studentId=${studentId}&dormNum=${dormNum}&repairContent=${repairContent}`;
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {"token": token}
+        });
+        const result = await res.text();
+        alert(result);
+        if (result.includes("成功")) {
+            document.getElementById("submitForm").reset();
+            loadMyList();
+        }
+    }
+
+    //加载我的报修
+    async function loadMyList() {
+        if (!token) {alert("请先输入Token登录！"); return;}
+
+        const res = await fetch(`${baseUrl}/repair/myList`, {
+            headers: {"token": token}
+        });
+        const list = await res.json();
+        const container = document.getElementById("myList");
+        container.innerHTML = "";
+
+        list.forEach(order => {
+            const item = document.createElement("div");
+            item.className = "order-item";
+            item.innerHTML = `
+                <p>单号：${order.id}</p>
+                <p>学生ID：${order.studentId}</p>
+                <p>宿舍号：${order.dormNum}</p>
+                <p>报修内容：${order.repairContent}</p>
+                <p>状态：${order.status === 0 ? "待处理" : "已处理"}</p>
+                <p>提交时间：${new Date(order.createTime).toLocaleString()}</p>
+            `;
+            container.appendChild(item);
+        });
+    }
+</script>
+</body>
+</html>
